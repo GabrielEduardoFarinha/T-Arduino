@@ -1,0 +1,64 @@
+// Pin definitions
+const int pingPin = 8;        // Ultrasonic sensor pin
+const int redLedPin = 7;      // Red LED pin
+const int yellowLedPin = 4;   // Yellow LED pin
+const int greenLedPin = 2;    // Green LED pin
+
+void setup() {
+  Serial.begin(9600);
+  
+  // Initialize LED pins as output
+  pinMode(redLedPin, OUTPUT);
+  pinMode(yellowLedPin, OUTPUT);
+  pinMode(greenLedPin, OUTPUT);
+}
+
+void loop() {
+  long duration;
+  long distance;
+
+  // Trigger the ultrasonic sensor
+  pinMode(pingPin, OUTPUT);
+  digitalWrite(pingPin, LOW);
+  delayMicroseconds(2);
+  digitalWrite(pingPin, HIGH);
+  delayMicroseconds(5);
+  digitalWrite(pingPin, LOW);
+  
+  // Read the echo time
+  pinMode(pingPin, INPUT);
+  duration = pulseIn(pingPin, HIGH);
+  
+  // Calculate the distance in centimeters
+  distance = microsectocentometer(duration);
+
+  // Debugging output
+  Serial.print("Distance: ");
+  Serial.print(distance);
+  Serial.println(" cm");
+
+  
+  // Control LEDs based on distance
+  if (distance < 10) { // Close (less than 10 cm)
+    digitalWrite(redLedPin, HIGH);
+    digitalWrite(yellowLedPin, LOW);
+    digitalWrite(greenLedPin, LOW);
+  } 
+  else if (distance >= 10 && distance < 20) { // Medium (10 to 20 cm)
+    digitalWrite(redLedPin, LOW);
+    digitalWrite(yellowLedPin, HIGH);
+    digitalWrite(greenLedPin, LOW);
+  } 
+  else { // Far (20 cm and beyond)
+    digitalWrite(redLedPin, LOW);
+    digitalWrite(yellowLedPin, LOW);
+    digitalWrite(greenLedPin, HIGH);
+  }
+
+  // Wait a short time before the next measurement
+  delay(200);
+}
+
+// Function to convert microseconds to centimeters
+long microsectocentometer(long microseconds) {
+  return microseconds / 29 / 2;
