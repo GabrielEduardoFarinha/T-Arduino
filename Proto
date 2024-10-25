@@ -1,3 +1,5 @@
+#include <Servo.h>
+
 long microsectocentometer(long microseconds) {
   return microseconds / 29 / 2;
 }
@@ -6,19 +8,27 @@ const int pingPin = 8;
 const int redLedPin = 7;      
 const int yellowLedPin = 4;   
 const int greenLedPin = 2;    
+const int buttonPin = 12;     
+const int servoPin = 13;      
 
+Servo myServo;               
 void setup() {
   Serial.begin(9600);
   
   pinMode(redLedPin, OUTPUT);
   pinMode(yellowLedPin, OUTPUT);
   pinMode(greenLedPin, OUTPUT);
+  pinMode(buttonPin, INPUT_PULLUP); // Use internal pull-up resistor
+
+  myServo.attach(servoPin);          // Attach the servo to the pin
+  myServo.write(0);                  // Set initial position of the servo
 }
 
 void loop() {
   long duration;
   long distance;
-  
+
+
   pinMode(pingPin, OUTPUT);
   digitalWrite(pingPin, LOW);
   delayMicroseconds(2);
@@ -30,7 +40,6 @@ void loop() {
   pinMode(pingPin, INPUT);
   duration = pulseIn(pingPin, HIGH);
   
- 
   distance = microsectocentometer(duration);
 
 
@@ -38,7 +47,7 @@ void loop() {
   Serial.print(distance);
   Serial.println(" cm");
 
-
+ 
   if (distance < 90) {
     digitalWrite(redLedPin, HIGH);
     digitalWrite(yellowLedPin, LOW);
@@ -60,6 +69,16 @@ void loop() {
     digitalWrite(greenLedPin, LOW);
   }
 
-  
+
+  if (digitalRead(greenLedPin) == HIGH) { // Check if green LED is on
+    if (digitalRead(buttonPin) == LOW) { // Button pressed
+      myServo.write(90); // Move servo to 90 degrees (adjust as needed)
+    } else {
+      myServo.write(0);  // Return servo to initial position
+    }
+  } else {
+    myServo.write(0); // Ensure servo is in initial position if green LED is off
+  }
+
   delay(200);
 }
