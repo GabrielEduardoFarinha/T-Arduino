@@ -1,80 +1,61 @@
-#include <Servo.h>
+#include <ServoTimer2.h>
+#include <Ultrasonic.h>
 
 long microsectocentometer(long microseconds) {
   return microseconds / 29 / 2;
 }
 
-const int pingPin = 8;      
-const int redLedPin = 7;      
-const int yellowLedPin = 4;   
-const int greenLedPin = 2;    
-const int buttonPin = 12;     
-const int servoPin = 13;      
+const int triggerPin = 4; 
+const int echoPin = 5;     
+const int redLedPin = 7;    
+const int greenLedPin = 2;  
+const int buttonPin = 12;  
+const int servoPin = 8;     
 
-Servo myServo;
+Ultrasonic ultrasonic(triggerPin, echoPin);
+ServoTimer2 myServo;  
 
 void setup() {
   Serial.begin(9600);
   
   pinMode(redLedPin, OUTPUT);
-  pinMode(yellowLedPin, OUTPUT);
   pinMode(greenLedPin, OUTPUT);
   pinMode(buttonPin, INPUT_PULLUP);
-
-  myServo.attach(servoPin);
-  myServo.write(0);
+  
+  myServo.attach(servoPin);  
+  myServo.write(50);           
+  
+  pinMode(triggerPin, OUTPUT);
+  pinMode(echoPin, INPUT);
 }
 
 void loop() {
-  long duration;
-  long distance;
-
-  pinMode(pingPin, OUTPUT);
-  digitalWrite(pingPin, LOW);
-  delayMicroseconds(2);
-  digitalWrite(pingPin, HIGH);
-  delayMicroseconds(5);
-  digitalWrite(pingPin, LOW);
-  
-  pinMode(pingPin, INPUT);
-  duration = pulseIn(pingPin, HIGH);
-  
-  distance = microsectocentometer(duration);
+  float cmMsec;
+  long microsec = ultrasonic.timing();
+  cmMsec = ultrasonic.convert(microsec, Ultrasonic::CM);
 
   Serial.print("Distance: ");
-  Serial.print(distance);
+  Serial.print(cmMsec);
   Serial.println(" cm");
 
-  if (distance < 90) {
+  if (cmMsec < 20) { 
     digitalWrite(redLedPin, HIGH);
-    digitalWrite(yellowLedPin, LOW);
     digitalWrite(greenLedPin, LOW);
-  } 
-  else if (distance >= 90 && distance <= 200) {
+  } else {
     digitalWrite(redLedPin, LOW);
-    digitalWrite(yellowLedPin, HIGH);
-    digitalWrite(greenLedPin, LOW);
-  } 
-  else if (distance > 200 && distance <= 301) {
-    digitalWrite(redLedPin, LOW);
-    digitalWrite(yellowLedPin, LOW);
     digitalWrite(greenLedPin, HIGH);
-  } 
-  else { 
-    digitalWrite(redLedPin, HIGH);
-    digitalWrite(yellowLedPin, LOW);
-    digitalWrite(greenLedPin, LOW);
   }
 
-  if (digitalRead(greenLedPin) == HIGH) {
-    if (digitalRead(buttonPin) == LOW) {
-      myServo.write(90);
-    } else {
-      myServo.write(0);
-    }
+  if (digitalRead(greenLedPin) == HIGH && digitalRead(buttonPin) == HIGH) {
+    myServo.write(1250);  
   } else {
-    myServo.write(0);
+    myServo.write(50);   
   }
 
   delay(200);
+}
+
+void saveMeasurement(long distance) {
+  Serial.print("Save: ");
+  Serial.println(distance);
 }
