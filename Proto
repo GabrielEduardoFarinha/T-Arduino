@@ -23,7 +23,7 @@ void setup() {
   pinMode(buttonPin, INPUT_PULLUP);
   
   myServo.attach(servoPin);  
-  myServo.write(50);           
+  myServo.write(1000);           
   
   pinMode(triggerPin, OUTPUT);
   pinMode(echoPin, INPUT);
@@ -47,9 +47,10 @@ void loop() {
   }
 
   if (digitalRead(greenLedPin) == HIGH && digitalRead(buttonPin) == HIGH) {
-    myServo.write(1250);  
+    myServo.write(1250); 
+    Serial.println("BUTTON_PRESSED");
   } else {
-    myServo.write(50);   
+    myServo.write(1000);   
   }
 
   delay(200);
