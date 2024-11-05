@@ -1,0 +1,102 @@
+import serial
+import os
+import time
+from datetime import datetime
+
+
+serial_port = 'COM5'  #LEMBRA DE TROCAR 24
+baud_rate = 9600
+desktop_path = os.path.join(os.path.join(os.environ['USERPROFILE']), 'Desktop')
+file_path = os.path.join(desktop_path, 'regristosARD.txt')
+
+
+if not os.path.exists(file_path):
+    with open(file_path, 'w') as file:
+        file.write("Registro de leituras do Arduino\n")
+        file.write("Data e Hora\t\tDistância (cm)\tStatus\n")
+
+
+def calculate_precision(distance):
+    if distance >= 20:
+        return max(0, 100 - (distance - 20))
+    else:
+        return 100  
+
+
+def calculate_average_precision(distances):
+    if not distances:
+        return 0
+    precisions = [calculate_precision(d) for d in distances]
+    return sum(precisions) / len(precisions)
+
+
+try:
+    arduino = serial.Serial(serial_port, baud_rate, timeout=1)
+except serial.SerialException:
+    print("Erro: não foi possível conectar ao Arduino.")
+    exit()
+
+
+servo_aberturas = []
+readings = []
+
+try:
+    while True:
+        if arduino.in_waiting > 0:
+            line = arduino.readline().decode('utf-8').strip()
+            
+            if line.startswith("Distance:"):
+                
+                try:
+                    distance = float(line.split(":")[1].replace("cm", "").strip())
+                except ValueError:
+                    continue
+
+                button_status = arduino.readline().decode('utf-8').strip()
+
+                status = "Fechado"
+                if button_status == "BUTTON_PRESSED":
+                    status = "Se mente semente se mente"
+                    servo_aberturas.append(distance)
+
+                
+                readings.append((datetime.now(), distance, status))
+
+                
+                with open(file_path, 'a') as file:
+                    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                    file.write(f"{timestamp}\t{distance} cm\t{status}\n")
+                
+                
+                print(f"{timestamp} - Distância: {distance} cm - {status}")
+
+        
+        if arduino.in_waiting == 0:
+            time.sleep(2)  
+            if arduino.in_waiting == 0:
+                break
+
+except serial.SerialException:
+    print("Arduino desconectado. Calculando a precisão das leituras...")
+
+finally:
+    arduino.close()
+
+
+grouped_precisions = {}
+threshold = 2.0  
+
+for _, distance, status in readings:
+    
+    rounded_distance = round(distance / threshold) * threshold
+    if rounded_distance not in grouped_precisions:
+        grouped_precisions[rounded_distance] = []
+    grouped_precisions[rounded_distance].append(distance)
+
+
+with open(file_path, 'a') as file:
+    file.write("\nMédia de Precisão para Grupos de Leituras:\n")
+    for rounded_distance, distances in grouped_precisions.items():
+        average_precision = calculate_average_precision(distances)
+        file.write(f"Distância Aproximada: {rounded_distance} cm - Média de Precisão: {average_precision:.2f}%\n")
+        print(f"Distância Aproximada: {rounded_distance} cm - Média de Precisão: {average_precision:.2f}%")
